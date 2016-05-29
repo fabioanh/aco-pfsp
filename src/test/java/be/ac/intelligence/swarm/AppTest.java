@@ -30,7 +30,8 @@ public class AppTest extends TestCase {
 	 */
 	public void testApp() {
 //		assertTrue(true);
-		String[] strArray = "97 81  3 30  7 ".trim().replace("  ", " ").split(" ");
+		System.out.println("97 81   3 30  7 ".trim().replaceAll("\\s+", " "));
+		String[] strArray = "97 81   3 30  7 ".trim().replaceAll("\\s+", " ").split(" ");
 		assertEquals(5, strArray.length);
 	}
 }

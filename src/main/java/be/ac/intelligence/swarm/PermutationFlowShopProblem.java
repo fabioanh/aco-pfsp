@@ -48,7 +48,7 @@ public class PermutationFlowShopProblem {
 			LOGGER.trace("Number of Jobs for the instance: " + numJobs);
 			LOGGER.trace("Number of Machines for the instance: " + numMachines);
 
-			loadProcessingTimes(numJobs, numMachines, reader);
+			loadProcessingTimes(reader);
 
 			LOGGER.debug("Instance loaded successfully");
 		} catch (IOException e) {
