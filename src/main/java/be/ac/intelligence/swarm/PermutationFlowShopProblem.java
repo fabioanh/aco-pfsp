@@ -30,7 +30,9 @@ public class PermutationFlowShopProblem {
 	 */
 	private HashMap<Integer, List<Integer>> jobProcessingTime;
 
-	private PermutationFlowShopProblem(String instanceFile) {
+	public PermutationFlowShopProblem(String instanceFile) {
+		machineProcessingTime = new HashMap<>();
+		jobProcessingTime = new HashMap<>();
 		readInstance(instanceFile);
 	}
 
