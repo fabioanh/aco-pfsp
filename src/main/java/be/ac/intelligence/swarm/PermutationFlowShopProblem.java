@@ -9,9 +9,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 
 public class PermutationFlowShopProblem {
@@ -60,6 +60,11 @@ public class PermutationFlowShopProblem {
 			LOGGER.trace(Arrays.toString(this.jobProcessingTime.get(0).getTimes().toArray()));
 
 			LOGGER.debug("Instance loaded successfully");
+
+			LOGGER.trace(Arrays.toString(getListOfTimesForJobs().toArray()));
+
+			LOGGER.trace(Arrays.toString(getOrderedListOfJobsByTimes().toArray()));
+
 		} catch (IOException e) {
 			LOGGER.error(e);
 		}
@@ -109,8 +114,25 @@ public class PermutationFlowShopProblem {
 	 * 
 	 * @return
 	 */
-	private List<List<Integer>> getListOfTimesForJobs() {
-		return jobProcessingTime.values().stream().map(j -> j.getTimes()).collect(Collectors.toList());
+	private List<Integer> getListOfTimesForJobs() {
+		return jobProcessingTime.values().stream().map(j -> j.getTimes().stream().mapToInt(Integer::intValue).sum())
+				.collect(Collectors.toList());
+	}
+
+	/**
+	 * Returns the list of jobs ordered in a descendant way based on the total
+	 * times for each job and all the machines
+	 * 
+	 * @return
+	 */
+	private List<Integer> getOrderedListOfJobsByTimes() {
+		List<Integer> timesForJobs = getListOfTimesForJobs();
+		Map<Integer, Integer> m = new HashMap<>();
+		for (int i = 0; i < timesForJobs.size(); i++) {
+			m.put(i, timesForJobs.get(i));
+		}
+		return m.entrySet().stream().sorted(Map.Entry.<Integer, Integer>comparingByValue().reversed())
+				.map(Map.Entry::getKey).collect(Collectors.toList());
 	}
 
 	public static class Job {
