@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 
 public class PermutationFlowShopProblem {
@@ -25,10 +26,14 @@ public class PermutationFlowShopProblem {
 	 */
 	private HashMap<Integer, List<Integer>> machineProcessingTime;
 	/**
-	 * Contains the list of processing times that a job referenced by the key
-	 * value requires in the set of machines
+	 * Contains the list of processing times that a job, referenced by the key
+	 * value, requires in the set of machines
 	 */
-	private HashMap<Integer, List<Integer>> jobProcessingTime;
+	private HashMap<Integer, Job> jobProcessingTime;
+	/**
+	 * Contains the solution sequence of the way the jobs have to be approached
+	 */
+	private List<Integer> solution;
 
 	public PermutationFlowShopProblem(String instanceFile) {
 		machineProcessingTime = new HashMap<>();
@@ -40,7 +45,6 @@ public class PermutationFlowShopProblem {
 		BufferedReader reader;
 		try {
 			reader = Files.newBufferedReader(Paths.get(instanceFile), Charset.defaultCharset());
-			String line = null;
 
 			// Using values of the first line
 			String[] splitLine = reader.readLine().trim().replace("  ", " ").split(" ");
@@ -51,6 +55,9 @@ public class PermutationFlowShopProblem {
 			LOGGER.trace("Number of Machines for the instance: " + numMachines);
 
 			loadProcessingTimes(reader);
+
+			LOGGER.trace(Arrays.toString(machineProcessingTime.get(0).toArray()));
+			LOGGER.trace(Arrays.toString(this.jobProcessingTime.get(0).getTimes().toArray()));
 
 			LOGGER.debug("Instance loaded successfully");
 		} catch (IOException e) {
@@ -69,20 +76,75 @@ public class PermutationFlowShopProblem {
 	 */
 	private void loadProcessingTimes(BufferedReader reader) throws IOException {
 		for (int i = 0; i < numMachines; i++) {
-			machineProcessingTime.put(i,
-					Arrays.asList(reader.readLine().trim().replace("  ", " ").split(" ")).stream()
-							.map(elem -> Integer.valueOf(elem)).collect(Collectors.toList()));
-
+			machineProcessingTime.put(i, Arrays.asList(reader.readLine().trim().replace("  ", " ").split(" ")).stream()
+					.map(elem -> Integer.valueOf(elem)).collect(Collectors.toList()));
 		}
-
+		// Initialize Job times array
 		for (int i = 0; i < numJobs; i++) {
-			jobProcessingTime.put(i, new ArrayList<>());
+			jobProcessingTime.put(i, new Job());
 		}
-
+		// Put the values of the time required per machine in the jobs structure
 		for (List<Integer> processingTimes : machineProcessingTime.values()) {
 			for (int i = 0; i < numJobs; i++) {
-				jobProcessingTime.get(i).add(processingTimes.get(i));
+				jobProcessingTime.get(i).getTimes().add(processingTimes.get(i));
 			}
 		}
+		// Compute total processing time for each job.
+		for (Job j : jobProcessingTime.values()) {
+			j.computeTotalTime();
+		}
+	}
+
+	/**
+	 * Getter for the array containing the solution sequence
+	 * 
+	 * @return
+	 */
+	public List<Integer> getSolution() {
+		return this.solution;
+	}
+
+	/**
+	 * Get the list of times for the whole set of jobs
+	 * 
+	 * @return
+	 */
+	private List<List<Integer>> getListOfTimesForJobs() {
+		return jobProcessingTime.values().stream().map(j -> j.getTimes()).collect(Collectors.toList());
+	}
+
+	public static class Job {
+		private List<Integer> times;
+		private Integer total;
+
+		public Job(List<Integer> times) {
+			this.times = times;
+			computeTotalTime();
+		}
+
+		public Job() {
+			this.times = new ArrayList<>();
+		}
+
+		public void computeTotalTime() {
+			total = times.stream().mapToInt(a -> a).sum();
+		}
+
+		public List<Integer> getTimes() {
+			return times;
+		}
+
+		public void setTimes(List<Integer> times) {
+			this.times = times;
+		}
+
+		public Integer getTotal() {
+			return total;
+		}
+
+		public void setTotal(Integer total) {
+			this.total = total;
+		}
+
 	}
 }
