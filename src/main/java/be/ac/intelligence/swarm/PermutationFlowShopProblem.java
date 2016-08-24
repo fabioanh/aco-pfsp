@@ -135,6 +135,28 @@ public class PermutationFlowShopProblem {
 				.map(Map.Entry::getKey).collect(Collectors.toList());
 	}
 
+	public Integer computeMakespan(Integer job1Id, Integer job2Id) {
+		return computeMakespan(jobProcessingTime.get(job1Id).getTimes(), jobProcessingTime.get(job2Id).getTimes());
+	}
+
+	public Integer computeMakespan(List<Integer> job1Times, List<Integer> job2Times) {
+		Integer xTmp;
+		Integer x = job1Times.get(0);
+		Integer y = 0;
+
+		for (int i = 0; i < job1Times.size(); i++) {
+			if (x < y) {
+				x = y;
+			}
+			xTmp = x;
+			if (i < job1Times.size() - 1) {
+				x = xTmp + job1Times.get(i + 1);
+			}
+			y = xTmp + job2Times.get(i);
+		}
+		return y;
+	}
+
 	public static class Job {
 		private List<Integer> times;
 		private Integer total;
