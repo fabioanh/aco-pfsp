@@ -2,6 +2,7 @@ package be.ac.intelligence.swarm;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -14,7 +15,12 @@ import java.util.stream.Collectors;
 
 import org.apache.log4j.Logger;
 
-public class PermutationFlowShopProblem {
+public class PermutationFlowShopProblem implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -71058095287208590L;
 
 	private final static Logger LOGGER = Logger.getLogger(Ant.class);
 
@@ -64,6 +70,8 @@ public class PermutationFlowShopProblem {
 			LOGGER.trace(Arrays.toString(getListOfTimesForJobs().toArray()));
 
 			LOGGER.trace(Arrays.toString(getOrderedListOfJobsByTimes().toArray()));
+			
+			LOGGER.trace(computeMakespan(2, 0));
 
 		} catch (IOException e) {
 			LOGGER.error(e);

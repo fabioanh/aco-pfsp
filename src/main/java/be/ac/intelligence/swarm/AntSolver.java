@@ -9,6 +9,7 @@ public class AntSolver {
 	private HashMap<Integer, Double> pheromone;
 	private HashMap<Integer, Double> heuristicInformation;
 	private ArrayList<Ant> ants;
+	private Ant bestAnt;
 
 	private AntSolver(String instance) {
 		problem = new PermutationFlowShopProblem(instance);
@@ -29,6 +30,10 @@ public class AntSolver {
 
 	public void execute() {
 		// TODO Auto-generated method stub
+	}
+
+	public void updatePhereomone(Ant currentBestAnt) {
+
 	}
 
 }
