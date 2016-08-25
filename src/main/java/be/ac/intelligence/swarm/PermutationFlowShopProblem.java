@@ -64,6 +64,8 @@ public class PermutationFlowShopProblem {
 			LOGGER.trace(Arrays.toString(getListOfTimesForJobs().toArray()));
 
 			LOGGER.trace(Arrays.toString(getOrderedListOfJobsByTimes().toArray()));
+			
+			LOGGER.trace(computeMakespan(2, 0));
 
 		} catch (IOException e) {
 			LOGGER.error(e);
