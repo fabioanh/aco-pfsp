@@ -77,6 +77,7 @@ public class PermutationFlowShopProblem implements Serializable {
 			LOGGER.debug("Instance loaded successfully");
 
 			LOGGER.trace(computeMakespan(2, 0));
+			LOGGER.trace(computeMakespan(Arrays.asList(2, 0, 1)));
 
 		} catch (IOException e) {
 			LOGGER.error(e);
@@ -137,18 +138,33 @@ public class PermutationFlowShopProblem implements Serializable {
 
 	public Integer computeMakespan(List<Integer> jobsSequence) {
 
-		Integer x;
-		Integer y;
 		Integer totalTime = 0;
+		// HashMap<Integer, MakespanJob[]> makespanSummary = new HashMap<>();
+		MakespanJob[] mj = new MakespanJob[jobsSequence.size()];
+		Integer[] endTimes = new Integer[jobsSequence.size()];
 
 		for (int i = 0; i < numMachines; i++) {
-			for (int j = 0; j < numJobs; j++) {
-				if (j == 0) {
-					x = 0;
+			for (int j = 0; j < jobsSequence.size(); j++) {
+				if (i == 0) {
+					mj[j] = new MakespanJob(totalTime, totalTime + machines[i][jobsSequence.get(j)],
+							jobsSequence.get(j));
+					totalTime = mj[j].getEndTime();
+				} else {
+					if (j > 0) {
+						mj[j] = new MakespanJob(mj[j].getEndTime(),
+								mj[j].getEndTime() > mj[j - 1].getEndTime()
+										? mj[j].getEndTime() + machines[i][jobsSequence.get(j)]
+										: mj[j - 1].getEndTime() + machines[i][jobsSequence.get(j)],
+								jobsSequence.get(j));
+					} else {
+						mj[j] = new MakespanJob(mj[j].getEndTime(),
+								mj[j].getEndTime() + machines[i][jobsSequence.get(j)], jobsSequence.get(j));
+					}
 				}
 			}
+			// makespanSummary.put(i, mj);
 		}
-		return totalTime;
+		return mj[jobsSequence.size() - 1].getEndTime();
 	}
 
 	public Integer computeMakespan(Integer job1Id, Integer job2Id) {
@@ -212,6 +228,28 @@ public class PermutationFlowShopProblem implements Serializable {
 
 		public void setTotal(Integer total) {
 			this.total = total;
+		}
+
+	}
+
+	private class MakespanJob {
+		private final int initTime;
+		private final int endTime;
+		private final int jobId;
+
+		public MakespanJob(int initTime, int endTime, int jobId) {
+			this.initTime = initTime;
+			this.endTime = endTime;
+			this.jobId = jobId;
+		}
+
+		public int getEndTime() {
+			return endTime;
+		}
+
+		@Override
+		public String toString() {
+			return "{" + initTime + "," + endTime + "," + jobId + "}";
 		}
 
 	}
