@@ -77,7 +77,7 @@ public class PermutationFlowShopProblem implements Serializable {
 			LOGGER.debug("Instance loaded successfully");
 
 			LOGGER.trace(computeMakespan(2, 0));
-			LOGGER.trace(computeMakespan(Arrays.asList(2, 0, 1)));
+			LOGGER.trace(computeMakespan(Arrays.asList(3, 2, 0, 1)));
 
 		} catch (IOException e) {
 			LOGGER.error(e);
@@ -121,50 +121,32 @@ public class PermutationFlowShopProblem implements Serializable {
 	}
 
 	/**
-	 * Returns the list of jobs ordered in a descendant way based on the total
-	 * times for each job and all the machines
+	 * Computes the makespan of any given sequence of jobs
 	 * 
+	 * @param jobsSequence
 	 * @return
 	 */
-	private List<Integer> getOrderedListOfJobsByTimes() {
-		List<Integer> timesForJobs = getListOfTimesForJobs();
-		Map<Integer, Integer> m = new HashMap<>();
-		for (int i = 0; i < timesForJobs.size(); i++) {
-			m.put(i, timesForJobs.get(i));
-		}
-		return m.entrySet().stream().sorted(Map.Entry.<Integer, Integer>comparingByValue().reversed())
-				.map(Map.Entry::getKey).collect(Collectors.toList());
-	}
-
 	public Integer computeMakespan(List<Integer> jobsSequence) {
 
-		Integer totalTime = 0;
-		// HashMap<Integer, MakespanJob[]> makespanSummary = new HashMap<>();
-		MakespanJob[] mj = new MakespanJob[jobsSequence.size()];
+		Integer tmp = 0;
 		Integer[] endTimes = new Integer[jobsSequence.size()];
 
 		for (int i = 0; i < numMachines; i++) {
 			for (int j = 0; j < jobsSequence.size(); j++) {
 				if (i == 0) {
-					mj[j] = new MakespanJob(totalTime, totalTime + machines[i][jobsSequence.get(j)],
-							jobsSequence.get(j));
-					totalTime = mj[j].getEndTime();
+					endTimes[j] = tmp + machines[i][jobsSequence.get(j)];
+					tmp = endTimes[j];
 				} else {
 					if (j > 0) {
-						mj[j] = new MakespanJob(mj[j].getEndTime(),
-								mj[j].getEndTime() > mj[j - 1].getEndTime()
-										? mj[j].getEndTime() + machines[i][jobsSequence.get(j)]
-										: mj[j - 1].getEndTime() + machines[i][jobsSequence.get(j)],
-								jobsSequence.get(j));
+						endTimes[j] = endTimes[j] > endTimes[j - 1] ? endTimes[j] + machines[i][jobsSequence.get(j)]
+								: endTimes[j - 1] + machines[i][jobsSequence.get(j)];
 					} else {
-						mj[j] = new MakespanJob(mj[j].getEndTime(),
-								mj[j].getEndTime() + machines[i][jobsSequence.get(j)], jobsSequence.get(j));
+						endTimes[j] = endTimes[j] + machines[i][jobsSequence.get(j)];
 					}
 				}
 			}
-			// makespanSummary.put(i, mj);
 		}
-		return mj[jobsSequence.size() - 1].getEndTime();
+		return endTimes[jobsSequence.size() - 1];
 	}
 
 	public Integer computeMakespan(Integer job1Id, Integer job2Id) {
@@ -228,28 +210,6 @@ public class PermutationFlowShopProblem implements Serializable {
 
 		public void setTotal(Integer total) {
 			this.total = total;
-		}
-
-	}
-
-	private class MakespanJob {
-		private final int initTime;
-		private final int endTime;
-		private final int jobId;
-
-		public MakespanJob(int initTime, int endTime, int jobId) {
-			this.initTime = initTime;
-			this.endTime = endTime;
-			this.jobId = jobId;
-		}
-
-		public int getEndTime() {
-			return endTime;
-		}
-
-		@Override
-		public String toString() {
-			return "{" + initTime + "," + endTime + "," + jobId + "}";
 		}
 
 	}
