@@ -2,6 +2,7 @@ package be.ac.intelligence.swarm;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -11,10 +12,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.log4j.Logger;
 
-public class PermutationFlowShopProblem {
+public class PermutationFlowShopProblem implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -71058095287208590L;
 
 	private final static Logger LOGGER = Logger.getLogger(Ant.class);
 
@@ -35,6 +43,11 @@ public class PermutationFlowShopProblem {
 	 */
 	private List<Integer> solution;
 
+	private Integer makespan;
+
+	private Integer[][] jobs;
+	private Integer[][] machines;
+
 	public PermutationFlowShopProblem(String instanceFile) {
 		machineProcessingTime = new HashMap<>();
 		jobProcessingTime = new HashMap<>();
@@ -51,20 +64,18 @@ public class PermutationFlowShopProblem {
 			numJobs = Integer.valueOf(splitLine[0]);
 			numMachines = Integer.valueOf(splitLine[1]);
 
+			jobs = new Integer[numJobs][numMachines];
+			machines = new Integer[numMachines][numJobs];
+
 			LOGGER.trace("Number of Jobs for the instance: " + numJobs);
 			LOGGER.trace("Number of Machines for the instance: " + numMachines);
 
-			loadProcessingTimes(reader);
+			loadProcessingTimess(reader);
 
-			LOGGER.trace(Arrays.toString(machineProcessingTime.get(0).toArray()));
-			LOGGER.trace(Arrays.toString(this.jobProcessingTime.get(0).getTimes().toArray()));
+			LOGGER.trace(Arrays.toString(jobs[0]));
 
 			LOGGER.debug("Instance loaded successfully");
 
-			LOGGER.trace(Arrays.toString(getListOfTimesForJobs().toArray()));
-
-			LOGGER.trace(Arrays.toString(getOrderedListOfJobsByTimes().toArray()));
-			
 			LOGGER.trace(computeMakespan(2, 0));
 
 		} catch (IOException e) {
@@ -73,33 +84,20 @@ public class PermutationFlowShopProblem {
 	}
 
 	/**
-	 * Method in charge of loading the processing times into the HashMaps of the
-	 * class
+	 * Method in charge of loading the processing times into the main matrix of
+	 * the class
 	 * 
 	 * @param numJobss
 	 * @param numMachiness
 	 * @param reader
 	 * @throws IOException
 	 */
-	private void loadProcessingTimes(BufferedReader reader) throws IOException {
+	private void loadProcessingTimess(BufferedReader reader) throws IOException {
 		for (int i = 0; i < numMachines; i++) {
-			machineProcessingTime.put(i, Arrays.asList(reader.readLine().trim().replace("  ", " ").split(" ")).stream()
-					.map(elem -> Integer.valueOf(elem)).collect(Collectors.toList()));
+			machines[i] = ArrayUtils.toObject(Stream.of(reader.readLine().trim().replace("  ", " ").split(" "))
+					.mapToInt(Integer::parseInt).toArray());
 		}
-		// Initialize Job times array
-		for (int i = 0; i < numJobs; i++) {
-			jobProcessingTime.put(i, new Job());
-		}
-		// Put the values of the time required per machine in the jobs structure
-		for (List<Integer> processingTimes : machineProcessingTime.values()) {
-			for (int i = 0; i < numJobs; i++) {
-				jobProcessingTime.get(i).getTimes().add(processingTimes.get(i));
-			}
-		}
-		// Compute total processing time for each job.
-		for (Job j : jobProcessingTime.values()) {
-			j.computeTotalTime();
-		}
+		jobs = PfspUtils.transposeMatrix(machines);
 	}
 
 	/**
@@ -137,26 +135,50 @@ public class PermutationFlowShopProblem {
 				.map(Map.Entry::getKey).collect(Collectors.toList());
 	}
 
-	public Integer computeMakespan(Integer job1Id, Integer job2Id) {
-		return computeMakespan(jobProcessingTime.get(job1Id).getTimes(), jobProcessingTime.get(job2Id).getTimes());
+	public Integer computeMakespan(List<Integer> jobsSequence) {
+
+		Integer x;
+		Integer y;
+		Integer totalTime = 0;
+
+		for (int i = 0; i < numMachines; i++) {
+			for (int j = 0; j < numJobs; j++) {
+				if (j == 0) {
+					x = 0;
+				}
+			}
+		}
+		return totalTime;
 	}
 
-	public Integer computeMakespan(List<Integer> job1Times, List<Integer> job2Times) {
+	public Integer computeMakespan(Integer job1Id, Integer job2Id) {
+		return computeMakespan(jobs[job1Id], jobs[job2Id]);
+	}
+
+	public Integer computeMakespan(Integer[] job1Times, Integer[] job2Times) {
 		Integer xTmp;
-		Integer x = job1Times.get(0);
+		Integer x = job1Times[0];
 		Integer y = 0;
 
-		for (int i = 0; i < job1Times.size(); i++) {
+		for (int i = 0; i < job1Times.length; i++) {
 			if (x < y) {
 				x = y;
 			}
 			xTmp = x;
-			if (i < job1Times.size() - 1) {
-				x = xTmp + job1Times.get(i + 1);
+			if (i < job1Times.length - 1) {
+				x = xTmp + job1Times[i + 1];
 			}
-			y = xTmp + job2Times.get(i);
+			y = xTmp + job2Times[i];
 		}
 		return y;
+	}
+
+	public Integer getNumJobs() {
+		return numJobs;
+	}
+
+	public Integer getMakespan() {
+		return makespan;
 	}
 
 	public static class Job {
