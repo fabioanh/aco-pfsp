@@ -1,42 +1,53 @@
 package be.ac.intelligence.swarm;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 
 public class AntSolver {
 
 	private PermutationFlowShopProblem problem;
+
+	/**
+	 * Pheromone and heuristic information matrices
+	 */
 	private Double[][] pheromone;
 	private Double[][] heuristicInformation;
+
 	private ArrayList<Ant> ants;
 	private Ant bestAnt;
-	// Pheromone evaporation rate
+
+	/**
+	 * Pheromone evaporation rate
+	 */
 	private Double rho;
 
-	private AntSolver(String instance) {
+	/**
+	 * Number of ants to use in the solution
+	 */
+	private Integer numAnts;
+
+	/**
+	 * Number of iterations
+	 */
+	private Integer numIterations;
+
+	private AntSolver(String instance, Double rho, Double beta, Integer numAnts, Integer numIterations) {
 		problem = new PermutationFlowShopProblem(instance);
 		initHeuristicInformation();
+		initPheromone();
 		this.pheromone = new Double[problem.getNumJobs()][problem.getNumJobs()];
-	}
-
-	public static class AntSolverBuilder {
-		private String instance;
-
-		public AntSolverBuilder instance(String instance) {
-			this.instance = instance;
-			return this;
-		}
-
-		public AntSolver build() {
-			return new AntSolver(instance);
-		}
+		this.numAnts = numAnts;
+		this.numIterations = numIterations;
+		this.rho = rho;
 	}
 
 	public void execute() {
-		// TODO Auto-generated method stub
+
 	}
 
 	/**
-	 * Updates pheromone in a global way for all node values
+	 * Updates pheromone in a global way for all node values.
 	 * 
 	 * @param minimumMakespan
 	 */
@@ -50,7 +61,8 @@ public class AntSolver {
 	}
 
 	/**
-	 * Updates the pheromone nodes contained in the solution sequence
+	 * Updates the pheromone nodes contained in the solution sequence as
+	 * suggested by the literature for ACS
 	 * 
 	 * @param solution
 	 * @param minimumMakespan
@@ -87,4 +99,55 @@ public class AntSolver {
 		}
 	}
 
+	/**
+	 * Initializes the pheromone values using a random tour as reference
+	 */
+	private void initPheromone() {
+		ArrayList<Integer> seq = new ArrayList<>(problem.getUnscheduledJobs());
+		Collections.shuffle(seq);
+		Integer refMakespan = problem.computeMakespan(seq, 0);
+		Double initVal = this.numAnts.doubleValue() / refMakespan;
+		Arrays.fill(pheromone, initVal);
+	}
+
+	private void performLocalSearch() {
+
+	}
+
+	public static class AntSolverBuilder {
+		private String instance;
+		private Integer numAnts;
+		private Integer numIterations;
+		private Double rho;
+		private Double beta;
+
+		public AntSolverBuilder instance(String instance) {
+			this.instance = instance;
+			return this;
+		}
+
+		public AntSolverBuilder numAnts(Integer val) {
+			this.numAnts = val;
+			return this;
+		}
+
+		public AntSolverBuilder numIterations(Integer val) {
+			this.numIterations = val;
+			return this;
+		}
+
+		public AntSolverBuilder rho(Double val) {
+			this.rho = val;
+			return this;
+		}
+
+		public AntSolverBuilder beta(Double val) {
+			this.beta = val;
+			return this;
+		}
+
+		public AntSolver build() {
+			return new AntSolver(instance, rho, beta, numAnts, numIterations);
+		}
+	}
 }

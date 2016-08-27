@@ -8,10 +8,13 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.OptionalDouble;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.ArrayUtils;
@@ -26,18 +29,15 @@ public class PermutationFlowShopProblem implements Serializable {
 
 	private final static Logger LOGGER = Logger.getLogger(Ant.class);
 
+	/**
+	 * Number of Machines
+	 */
 	private Integer numMachines;
+
+	/**
+	 * Number of Jobs
+	 */
 	private Integer numJobs;
-	/**
-	 * Contains the list of processing times required for each job in the
-	 * machine referenced by the key of the map
-	 */
-	private HashMap<Integer, List<Integer>> machineProcessingTime;
-	/**
-	 * Contains the list of processing times that a job, referenced by the key
-	 * value, requires in the set of machines
-	 */
-	private HashMap<Integer, Job> jobProcessingTime;
 	/**
 	 * Contains the solution sequence of the way the jobs have to be approached
 	 */
@@ -45,13 +45,62 @@ public class PermutationFlowShopProblem implements Serializable {
 
 	private Integer makespan;
 
+	/**
+	 * Contains the end-times for each of the job in each of the machines.
+	 * Matrix used to allow recalculating the makespan from an intermediate
+	 * point without going through all the steps from the first machine
+	 */
+	private Integer[][] makespanMatrix;
+
+	/**
+	 * Main matrix of the problem containing the times for each job in the rows
+	 * of the data structure
+	 */
 	private Integer[][] jobs;
+	/**
+	 * Same information of the jobs matrix just transposed. Data structure
+	 * created just for easier understanding of some computations according to
+	 * what was thought on the paper while designing the solution. The solution
+	 * can be written only using the jobs matrix.
+	 */
 	private Integer[][] machines;
 
+	/**
+	 * List of unscheduled jobs whose total processing times are no less than
+	 * the average value of all scheduled jobs.
+	 */
+	private ArrayList<Integer> candidateList;
+
+	/**
+	 * List of scheduled jobs
+	 */
+	private Set<Integer> scheduledJobs;
+
+	/**
+	 * List of unscheduled jobs
+	 */
+	private Set<Integer> unscheduledJobs;
+
+	/**
+	 * Total time for each job
+	 */
+	private List<Integer> timeForJobs;
+
 	public PermutationFlowShopProblem(String instanceFile) {
-		machineProcessingTime = new HashMap<>();
-		jobProcessingTime = new HashMap<>();
+		// Initialize variables of the instance
 		readInstance(instanceFile);
+		makespanMatrix = new Integer[numMachines][];
+		timeForJobs = getListOfTimesForJobs();
+		scheduledJobs = new HashSet<>();
+		unscheduledJobs = IntStream.range(0, numJobs).boxed().collect(Collectors.toSet());
+
+		this.scheduleJob(2);
+		this.scheduleJob(3);
+		LOGGER.trace(this.timeForJobs);
+		LOGGER.trace(this.scheduledJobs);
+		LOGGER.trace(this.unscheduledJobs);
+		LOGGER.trace(computeMakespan(Arrays.asList(3, 2, 0, 1), 0));
+		LOGGER.trace(getCandidateListValues());
 	}
 
 	private void readInstance(String instanceFile) {
@@ -72,12 +121,7 @@ public class PermutationFlowShopProblem implements Serializable {
 
 			loadProcessingTimess(reader);
 
-			LOGGER.trace(Arrays.toString(jobs[0]));
-
 			LOGGER.debug("Instance loaded successfully");
-
-			LOGGER.trace(computeMakespan(2, 0));
-			LOGGER.trace(computeMakespan(Arrays.asList(3, 2, 0, 1)));
 
 		} catch (IOException e) {
 			LOGGER.error(e);
@@ -102,37 +146,42 @@ public class PermutationFlowShopProblem implements Serializable {
 	}
 
 	/**
-	 * Getter for the array containing the solution sequence
-	 * 
-	 * @return
-	 */
-	public List<Integer> getSolution() {
-		return this.solution;
-	}
-
-	/**
 	 * Get the list of times for the whole set of jobs
 	 * 
 	 * @return
 	 */
 	private List<Integer> getListOfTimesForJobs() {
-		return jobProcessingTime.values().stream().map(j -> j.getTimes().stream().mapToInt(Integer::intValue).sum())
-				.collect(Collectors.toList());
+		ArrayList<Integer> timesForJobs = new ArrayList<>();
+		for (int i = 0; i < numJobs; i++) {
+			timesForJobs.add(Stream.of(jobs[i]).mapToInt(Integer::intValue).sum());
+		}
+		return timesForJobs;
 	}
 
 	/**
 	 * Computes the makespan of any given sequence of jobs
 	 * 
 	 * @param jobsSequence
+	 * @param offset
+	 *            Indicates the starting position in the jobs to compute the
+	 *            makespan values. Used to allow recalculation of makespan
+	 *            without going through the entire process taking advantage of
+	 *            the previously stored information.
 	 * @return
 	 */
-	public Integer computeMakespan(List<Integer> jobsSequence) {
+	public Integer computeMakespan(List<Integer> jobsSequence, Integer offset) {
 
 		Integer tmp = 0;
-		Integer[] endTimes = new Integer[jobsSequence.size()];
+		// Stores the end times of each task
+		Integer[] endTimes;
+		if (offset > 0) {
+			endTimes = makespanMatrix[0];
+		} else {
+			endTimes = new Integer[jobsSequence.size()];
+		}
 
 		for (int i = 0; i < numMachines; i++) {
-			for (int j = 0; j < jobsSequence.size(); j++) {
+			for (int j = offset; j < jobsSequence.size(); j++) {
 				if (i == 0) {
 					endTimes[j] = tmp + machines[i][jobsSequence.get(j)];
 					tmp = endTimes[j];
@@ -145,8 +194,34 @@ public class PermutationFlowShopProblem implements Serializable {
 					}
 				}
 			}
+			makespanMatrix[i] = endTimes.clone();
 		}
-		return endTimes[jobsSequence.size() - 1];
+		makespan = endTimes[jobsSequence.size() - 1];
+		return makespan;
+	}
+
+	/**
+	 * Makes the computation to assign a value to the Candidate List used in the
+	 * solution of the problem. Candidate list defined in the literature as the
+	 * x unscheduled jobs whose total processing times are no less than the
+	 * average value of all scheduled jobs.
+	 */
+	private List<Integer> getCandidateListValues() {
+		List<Integer> candidateListt = new ArrayList<>();
+
+		OptionalDouble avgTimeScheduledJobs = scheduledJobs.stream().map(i -> timeForJobs.get(i))
+				.mapToDouble(a -> a.doubleValue()).average();
+		if (avgTimeScheduledJobs.isPresent()) {
+			LOGGER.trace("Avg Time Scheduled Jobs: " + avgTimeScheduledJobs.getAsDouble());
+			for (Integer uj : unscheduledJobs) {
+				if (timeForJobs.get(uj) > avgTimeScheduledJobs.getAsDouble()) {
+					candidateListt.add(uj);
+				}
+			}
+		} else {
+			candidateListt.addAll(unscheduledJobs);
+		}
+		return candidateListt;
 	}
 
 	public Integer computeMakespan(Integer job1Id, Integer job2Id) {
@@ -171,6 +246,24 @@ public class PermutationFlowShopProblem implements Serializable {
 		return y;
 	}
 
+	/**
+	 * modifies the list of scheduled and unscheduled jobs
+	 */
+	public void scheduleJob(int jobId) {
+		if (unscheduledJobs.remove(jobId)) {
+			scheduledJobs.add(jobId);
+		}
+	}
+
+	/**
+	 * Getter for the array containing the solution sequence
+	 * 
+	 * @return
+	 */
+	public List<Integer> getSolution() {
+		return this.solution;
+	}
+
 	public Integer getNumJobs() {
 		return numJobs;
 	}
@@ -179,38 +272,12 @@ public class PermutationFlowShopProblem implements Serializable {
 		return makespan;
 	}
 
-	public static class Job {
-		private List<Integer> times;
-		private Integer total;
-
-		public Job(List<Integer> times) {
-			this.times = times;
-			computeTotalTime();
-		}
-
-		public Job() {
-			this.times = new ArrayList<>();
-		}
-
-		public void computeTotalTime() {
-			total = times.stream().mapToInt(a -> a).sum();
-		}
-
-		public List<Integer> getTimes() {
-			return times;
-		}
-
-		public void setTimes(List<Integer> times) {
-			this.times = times;
-		}
-
-		public Integer getTotal() {
-			return total;
-		}
-
-		public void setTotal(Integer total) {
-			this.total = total;
-		}
-
+	public List<Integer> getCandidateList() {
+		return candidateList;
 	}
+
+	public Set<Integer> getUnscheduledJobs() {
+		return unscheduledJobs;
+	}
+
 }

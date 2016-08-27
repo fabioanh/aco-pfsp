@@ -84,6 +84,9 @@ public class App {
 	}
 
 	private static AntSolverBuilder getDefaultParameters() {
-		return new AntSolverBuilder();
+		AntSolverBuilder builder = new AntSolverBuilder();
+		builder.numIterations(100);
+		builder.numAnts(20);
+		return builder;
 	}
 }
