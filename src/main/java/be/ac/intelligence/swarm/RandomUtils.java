@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -93,6 +94,29 @@ public class RandomUtils {
 		Collections.shuffle(resultList);
 		return new HashSet<Integer>(resultList);
 
+	}
+
+	/**
+	 * Returns a random element from a list given the probability items in an
+	 * {@link Map.Entry<Integer, Double>} format, where the key of the entry is
+	 * the element and the value is its probability.
+	 * 
+	 * Asumes that the list of elements total 1.0 for the sum of their
+	 * probabilities.
+	 * 
+	 * @param list
+	 * @return
+	 */
+	public Integer getRandomForList(List<Map.Entry<Integer, Double>> list) {
+		Double prob = getRandomDouble();
+		Double sum = 0.0;
+		for (Map.Entry<Integer, Double> elem : list) {
+			sum += elem.getValue();
+			if (prob <= sum) {
+				return elem.getKey();
+			}
+		}
+		throw new IllegalStateException("The probabilities of the given elements don't sum 1.0");
 	}
 
 }

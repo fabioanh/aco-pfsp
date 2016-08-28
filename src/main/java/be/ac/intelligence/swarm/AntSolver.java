@@ -65,8 +65,10 @@ public class AntSolver {
 			// LOGGER.debug("iteration: " + currentIteration);
 			initAnts();
 			executeACSIteration();
+			if (LOGGER.isDebugEnabled()) {
+				LOGGER.debug(currentIteration + ": " + bestAnt.getMakespan() + ", " + bestAnt.getSolution());
+			}
 			currentIteration++;
-			LOGGER.debug(currentIteration + ": " + bestAnt.getMakespan());
 
 		}
 		LOGGER.info("Best makespan achieved: " + bestAnt.getMakespan() + " for the sequence: " + bestAnt.getSolution());
@@ -85,7 +87,7 @@ public class AntSolver {
 			}
 		}
 		performLocalSearch();
-		updatePheromone((ArrayList) bestAnt.getSolution(), bestAnt.getMakespan());
+		updatePheromone((ArrayList<Integer>) bestAnt.getSolution(), bestAnt.getMakespan());
 	}
 
 	/**

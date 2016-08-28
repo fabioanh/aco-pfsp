@@ -7,7 +7,6 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.OptionalDouble;
@@ -93,6 +92,7 @@ public class PermutationFlowShopProblem implements Serializable {
 		scheduledJobs = new HashSet<>();
 		unscheduledJobs = IntStream.range(0, numJobs).boxed().collect(Collectors.toSet());
 		solution = new ArrayList<>();
+		LOGGER.trace("Total times for the jobs: " + getListOfTimesForJobs());
 
 	}
 
@@ -285,7 +285,8 @@ public class PermutationFlowShopProblem implements Serializable {
 		return makespan;
 	}
 
-	public List<Integer> getCandidateList() {
+	//TODO: Remove if only used in the copy constructor
+	private List<Integer> getCandidateList() {
 		return candidateList;
 	}
 

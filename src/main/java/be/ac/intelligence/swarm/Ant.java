@@ -1,9 +1,11 @@
 package be.ac.intelligence.swarm;
 
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang3.SerializationUtils;
 
@@ -12,6 +14,7 @@ public class Ant {
 	private Double[][] pheromone;
 	private Double[][] initialPheromone;
 	private Double[][] heuristicInformation;
+	private Double[][] insertionProbability;
 	private Double beta;
 	private Double pheromoneDecayCoeficient;
 	private Double q0;
@@ -27,6 +30,7 @@ public class Ant {
 		this.beta = beta;
 		this.pheromoneDecayCoeficient = pheromoneDecayCoeficient;
 		this.q0 = q0;
+		insertionProbability = new Double[problem.getNumJobs()][problem.getNumJobs()];
 	}
 
 	public Ant() {
@@ -39,13 +43,14 @@ public class Ant {
 	 */
 	public Ant(final Ant ant) {
 		problem = SerializationUtils.clone(ant.getProblem());
-		this.pheromone = ant.getPheromone();
-		this.heuristicInformation = ant.getHeuristicInformation();
+		this.pheromone = PfspUtils.deepCopy(ant.getPheromone());
+		this.heuristicInformation = PfspUtils.deepCopy(ant.getHeuristicInformation());
 		this.beta = ant.getBeta();
-		this.pheromone = ant.getPheromone();
-		this.initialPheromone = ant.getPheromone();
+		this.pheromone = PfspUtils.deepCopy(ant.getPheromone());
+		this.initialPheromone = PfspUtils.deepCopy(ant.getPheromone());
 		this.pheromoneDecayCoeficient = ant.getPheromoneDecayCoeficient();
 		this.q0 = ant.getQ0();
+		this.insertionProbability = PfspUtils.deepCopy(ant.getInsertionProbability());
 	}
 
 	/**
@@ -55,7 +60,7 @@ public class Ant {
 	 * @param sets
 	 * @return
 	 */
-	private Double pseudorandomProportionalProbability(int i, int j, ArrayList<Integer> candidateList) {
+	private Double pseudorandomProportionalProbability(Integer i, Integer j, List<Integer> candidateList) {
 		Double numerator = pheromone[i][j] * Math.pow(heuristicInformation[i][j], beta);
 		Double denominator = 0.0;
 		for (Integer l : candidateList) {
@@ -100,7 +105,17 @@ public class Ant {
 			return getArgMaxValueIndex(problem.getCandidateListValues(),
 					problem.getSolution().get(problem.getSolution().size() - 1));
 		}
-		return RandomUtils.getInstance(null).getRandomFromCollection(problem.getUnscheduledJobs());
+		return getPseudoRandomJob(problem.getCandidateListValues(),
+				problem.getSolution().get(problem.getSolution().size() - 1));
+	}
+
+	private Integer getPseudoRandomJob(List<Integer> candidateList, Integer lastInsertedJob) {
+		List<Map.Entry<Integer, Double>> candidateProbabilities = new ArrayList<>();
+		for (Integer c : candidateList) {
+			candidateProbabilities.add(new AbstractMap.SimpleEntry<Integer, Double>(c,
+					pseudorandomProportionalProbability(lastInsertedJob, c, candidateList)));
+		}
+		return RandomUtils.getInstance(null).getRandomForList(candidateProbabilities);
 	}
 
 	/**
@@ -245,6 +260,10 @@ public class Ant {
 
 	public void setQ0(Double q0) {
 		this.q0 = q0;
+	}
+
+	public Double[][] getInsertionProbability() {
+		return insertionProbability;
 	}
 
 	private static class ArgMaxValue {
