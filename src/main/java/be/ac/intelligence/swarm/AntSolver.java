@@ -1,10 +1,14 @@
 package be.ac.intelligence.swarm;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 
+import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
+import org.apache.log4j.Logger;
+
 public class AntSolver {
+
+	private final static Logger LOGGER = Logger.getLogger(AntSolver.class);
 
 	private PermutationFlowShopProblem problem;
 
@@ -32,17 +36,67 @@ public class AntSolver {
 	 */
 	private Integer numIterations;
 
-	private AntSolver(String instance, Double rho, Double beta, Integer numAnts, Integer numIterations) {
+	private Double beta;
+
+	private Double pheromoneDecayCoeficient;
+
+	private Double q0;
+
+	private AntSolver(String instance, Double rho, Double beta, Integer numAnts, Integer numIterations,
+			Double pheromoneDecayCoeficient, Double q0, Integer seed) {
+		// Initialize random utilities with seed parameter
+		RandomUtils.getInstance(seed);
 		problem = new PermutationFlowShopProblem(instance);
-		initHeuristicInformation();
-		initPheromone();
 		this.pheromone = new Double[problem.getNumJobs()][problem.getNumJobs()];
 		this.numAnts = numAnts;
 		this.numIterations = numIterations;
 		this.rho = rho;
+		this.beta = beta;
+		this.pheromoneDecayCoeficient = pheromoneDecayCoeficient;
+		this.q0 = q0;
+		this.ants = new ArrayList<>();
+		initHeuristicInformation();
+		initPheromone();
 	}
 
 	public void execute() {
+		Integer currentIteration = 0;
+		while (currentIteration < numIterations) {
+			// LOGGER.debug("iteration: " + currentIteration);
+			initAnts();
+			executeACSIteration();
+			currentIteration++;
+			LOGGER.debug(currentIteration + ": " + bestAnt.getMakespan());
+
+		}
+		LOGGER.info("Best makespan achieved: " + bestAnt.getMakespan() + " for the sequence: " + bestAnt.getSolution());
+	}
+
+	/**
+	 * Executes a round on the whole colony for the ACS algorithm
+	 */
+	public void executeACSIteration() {
+		bestAnt = ants.get(0);
+		for (Ant ant : ants) {
+			ant.preProcess();
+			ant.solveACS();
+			if (ant.getMakespan() < bestAnt.getMakespan()) {
+				bestAnt = ant;
+			}
+		}
+		performLocalSearch();
+		updatePheromone((ArrayList) bestAnt.getSolution(), bestAnt.getMakespan());
+	}
+
+	/**
+	 * Initializes the ants
+	 */
+	private void initAnts() {
+		this.ants = new ArrayList<>();
+		for (int i = 0; i < numAnts; i++) {
+			this.ants.add(new Ant(problem, pheromone, heuristicInformation, beta, pheromoneDecayCoeficient, q0));
+			// this.ants.add(new Ant());
+		}
 
 	}
 
@@ -51,7 +105,7 @@ public class AntSolver {
 	 * 
 	 * @param minimumMakespan
 	 */
-	public void updatePhereomone(Integer minimumMakespan) {
+	public void updatePheromone(Integer minimumMakespan) {
 		// TODO: Optionally add evaporate pheromone using concepts of min-max
 		for (int i = 0; i < this.problem.getNumJobs(); i++) {
 			for (int j = 0; j < this.problem.getNumJobs(); j++) {
@@ -106,8 +160,18 @@ public class AntSolver {
 		ArrayList<Integer> seq = new ArrayList<>(problem.getUnscheduledJobs());
 		Collections.shuffle(seq);
 		Integer refMakespan = problem.computeMakespan(seq, 0);
-		Double initVal = this.numAnts.doubleValue() / refMakespan;
-		Arrays.fill(pheromone, initVal);
+		LOGGER.trace("Initializing pheromone");
+		LOGGER.trace(refMakespan);
+		LOGGER.trace(seq);
+		Double initVal = numAnts.doubleValue() / refMakespan;
+		for (int i = 0; i < problem.getNumJobs(); i++) {
+			for (int j = i; j < problem.getNumJobs(); j++) {
+				pheromone[i][j] = initVal;
+				if (i != j) {
+					pheromone[j][i] = initVal;
+				}
+			}
+		}
 	}
 
 	private void performLocalSearch() {
@@ -120,6 +184,9 @@ public class AntSolver {
 		private Integer numIterations;
 		private Double rho;
 		private Double beta;
+		private Double pheromoneDecayCoeficient;
+		private Double q0;
+		private Integer seed;
 
 		public AntSolverBuilder instance(String instance) {
 			this.instance = instance;
@@ -146,8 +213,28 @@ public class AntSolver {
 			return this;
 		}
 
+		public AntSolverBuilder pheromoneDecayCoeficient(Double val) {
+			this.pheromoneDecayCoeficient = val;
+			return this;
+		}
+
+		public AntSolverBuilder q0(Double val) {
+			this.q0 = val;
+			return this;
+		}
+
+		public AntSolverBuilder seed(Integer val) {
+			this.seed = val;
+			return this;
+		}
+
 		public AntSolver build() {
-			return new AntSolver(instance, rho, beta, numAnts, numIterations);
+			LOGGER.trace("Building solver with parameters: " + printableVersion());
+			return new AntSolver(instance, rho, beta, numAnts, numIterations, pheromoneDecayCoeficient, q0, seed);
+		}
+
+		private String printableVersion() {
+			return ReflectionToStringBuilder.toString(this);
 		}
 	}
 }

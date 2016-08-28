@@ -1,6 +1,7 @@
 package be.ac.intelligence.swarm;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
@@ -18,13 +19,17 @@ public class Ant {
 	public Ant(final PermutationFlowShopProblem problem, final Double[][] pheromone,
 			final Double[][] heuristicInformation, final Double beta, final Double pheromoneDecayCoeficient,
 			final double q0) {
-		this.problem = problem;
+		this.problem = SerializationUtils.clone(problem);
+		// this.problem = new PermutationFlowShopProblem(problem);
 		this.pheromone = PfspUtils.deepCopy(pheromone);
 		this.initialPheromone = PfspUtils.deepCopy(pheromone);
 		this.heuristicInformation = PfspUtils.deepCopy(heuristicInformation);
 		this.beta = beta;
 		this.pheromoneDecayCoeficient = pheromoneDecayCoeficient;
 		this.q0 = q0;
+	}
+
+	public Ant() {
 	}
 
 	/**
@@ -84,12 +89,48 @@ public class Ant {
 		return max.getJ();
 	}
 
+	/**
+	 * Return the index of the next job to be chosen based on the candidate list
+	 * using the random proportional rule
+	 * 
+	 * @return
+	 */
 	private Integer getNextJob() {
 		if (RandomUtils.getInstance(null).getRandomDouble() <= q0) {
-			return getArgMaxValueIndex(problem.getCandidateList(),
+			return getArgMaxValueIndex(problem.getCandidateListValues(),
 					problem.getSolution().get(problem.getSolution().size() - 1));
 		}
 		return RandomUtils.getInstance(null).getRandomFromCollection(problem.getUnscheduledJobs());
+	}
+
+	/**
+	 * Add next job into the solution modifying the reference lists and
+	 * re-computing the makespan value for a job chosen using the random
+	 * proportional rule
+	 */
+	public void addNextJob() {
+		addNextJob(getNextJob());
+	}
+
+	/**
+	 * Add next job into the solution modifying the reference lists and
+	 * re-computing the makespan value
+	 */
+	public void addNextJob(Integer nextJob) {
+		problem.scheduleJob(nextJob);
+		problem.computeMakespan(problem.getSolution(), problem.getSolution().size() - 1);
+	}
+
+	/**
+	 * Adds a list of jobs into the solution
+	 * 
+	 * @param nextJobs
+	 */
+	public void addNextJobs(List<Integer> nextJobs) {
+		for (Integer nj : nextJobs) {
+			problem.scheduleJob(nj);
+		}
+		problem.computeMakespan(problem.getSolution(), problem.getSolution().size() - nextJobs.size());
 	}
 
 	/**
@@ -106,9 +147,56 @@ public class Ant {
 	 * Method to update a single value of the pheromone based on its indices for
 	 * the pheromone matrix
 	 */
-	private void updatePheromoneSingle(int i, int j) {
+	public void updatePheromoneSingle(int i, int j) {
 		this.pheromone[i][j] = (1.0 - pheromoneDecayCoeficient) * pheromone[i][j]
 				+ (pheromoneDecayCoeficient * initialPheromone[i][j]);
+	}
+
+	/**
+	 * Method to randomly select two jobs and check which permutation a-b or b-a
+	 * has a better makespan adding it as initial solution.
+	 */
+	public void preProcess() {
+		Integer a, b;
+		a = RandomUtils.getInstance(null).getRandomFromCollection(problem.getUnscheduledJobs());
+		do {
+			b = RandomUtils.getInstance(null).getRandomFromCollection(problem.getUnscheduledJobs());
+		} while (a == b);
+		if (problem.computeMakespan(a, b) < problem.computeMakespan(b, a)) {
+			addNextJobs(Arrays.asList(a, b));
+		} else {
+			addNextJobs(Arrays.asList(b, a));
+		}
+	}
+
+	/**
+	 * Solution following the ACS approach
+	 */
+	public void solveACS() {
+		while (!problem.getUnscheduledJobs().isEmpty()) {
+			addNextJob();
+			updatePheromoneSingle(problem.getSolution().get(problem.getSolution().size() - 2),
+					problem.getSolution().get(problem.getSolution().size() - 1));
+		}
+		problem.computeMakespan(problem.getSolution(), 0);
+	}
+
+	/**
+	 * Proxy method to return the solution of the problem
+	 * 
+	 * @return
+	 */
+	public List<Integer> getSolution() {
+		return this.problem.getSolution();
+	}
+
+	/**
+	 * Proxy method to return the makespan value of the problem
+	 * 
+	 * @return
+	 */
+	public Integer getMakespan() {
+		return this.problem.getMakespan();
 	}
 
 	public PermutationFlowShopProblem getProblem() {

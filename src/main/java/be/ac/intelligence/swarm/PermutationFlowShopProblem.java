@@ -8,7 +8,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.OptionalDouble;
@@ -93,14 +92,29 @@ public class PermutationFlowShopProblem implements Serializable {
 		timeForJobs = getListOfTimesForJobs();
 		scheduledJobs = new HashSet<>();
 		unscheduledJobs = IntStream.range(0, numJobs).boxed().collect(Collectors.toSet());
+		solution = new ArrayList<>();
 
-		this.scheduleJob(2);
-		this.scheduleJob(3);
-		LOGGER.trace(this.timeForJobs);
-		LOGGER.trace(this.scheduledJobs);
-		LOGGER.trace(this.unscheduledJobs);
-		LOGGER.trace(computeMakespan(Arrays.asList(3, 2, 0, 1), 0));
-		LOGGER.trace(getCandidateListValues());
+	}
+
+	@SuppressWarnings("unchecked")
+	public PermutationFlowShopProblem(PermutationFlowShopProblem copy) {
+		super();
+		this.numMachines = copy.getNumMachines();
+		this.numJobs = copy.getNumJobs();
+		this.solution = copy.getSolution() != null ? (List<Integer>) ((ArrayList<Integer>) copy.getSolution()).clone()
+				: null;
+		this.makespan = copy.getMakespan();
+		this.makespanMatrix = PfspUtils.deepCopy(copy.getMakespanMatrix());
+		this.jobs = PfspUtils.deepCopy(copy.getJobs());
+		this.machines = PfspUtils.deepCopy(copy.getMachines());
+		this.candidateList = copy.getCandidateList() != null
+				? (ArrayList<Integer>) ((ArrayList<Integer>) copy.getCandidateList()).clone() : null;
+		this.scheduledJobs = copy.getScheduledJobs() != null
+				? (Set<Integer>) ((HashSet<Integer>) copy.getScheduledJobs()).clone() : null;
+		this.unscheduledJobs = copy.getUnscheduledJobs() != null
+				? (Set<Integer>) ((HashSet<Integer>) copy.getUnscheduledJobs()).clone() : null;
+		this.timeForJobs = copy.getTimeForJobs() != null
+				? (List<Integer>) ((ArrayList<Integer>) copy.getTimeForJobs()).clone() : null;
 	}
 
 	private void readInstance(String instanceFile) {
@@ -173,11 +187,9 @@ public class PermutationFlowShopProblem implements Serializable {
 
 		Integer tmp = 0;
 		// Stores the end times of each task
-		Integer[] endTimes;
+		Integer[] endTimes = new Integer[jobsSequence.size()];
 		if (offset > 0) {
-			endTimes = makespanMatrix[0];
-		} else {
-			endTimes = new Integer[jobsSequence.size()];
+			System.arraycopy(makespanMatrix[0], 0, endTimes, 0, makespanMatrix[0].length);
 		}
 
 		for (int i = 0; i < numMachines; i++) {
@@ -206,19 +218,19 @@ public class PermutationFlowShopProblem implements Serializable {
 	 * x unscheduled jobs whose total processing times are no less than the
 	 * average value of all scheduled jobs.
 	 */
-	private List<Integer> getCandidateListValues() {
+	public List<Integer> getCandidateListValues() {
 		List<Integer> candidateListt = new ArrayList<>();
 
 		OptionalDouble avgTimeScheduledJobs = scheduledJobs.stream().map(i -> timeForJobs.get(i))
 				.mapToDouble(a -> a.doubleValue()).average();
 		if (avgTimeScheduledJobs.isPresent()) {
-			LOGGER.trace("Avg Time Scheduled Jobs: " + avgTimeScheduledJobs.getAsDouble());
 			for (Integer uj : unscheduledJobs) {
 				if (timeForJobs.get(uj) > avgTimeScheduledJobs.getAsDouble()) {
 					candidateListt.add(uj);
 				}
 			}
-		} else {
+		}
+		if (candidateListt.isEmpty()) {
 			candidateListt.addAll(unscheduledJobs);
 		}
 		return candidateListt;
@@ -247,10 +259,11 @@ public class PermutationFlowShopProblem implements Serializable {
 	}
 
 	/**
-	 * modifies the list of scheduled and unscheduled jobs
+	 * modifies the list of scheduled and unscheduled jobs and the solution list
 	 */
 	public void scheduleJob(int jobId) {
 		if (unscheduledJobs.remove(jobId)) {
+			solution.add(jobId);
 			scheduledJobs.add(jobId);
 		}
 	}
@@ -278,6 +291,31 @@ public class PermutationFlowShopProblem implements Serializable {
 
 	public Set<Integer> getUnscheduledJobs() {
 		return unscheduledJobs;
+	}
+
+	private List<Integer> getTimeForJobs() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	private Set<Integer> getScheduledJobs() {
+		return scheduledJobs;
+	}
+
+	private Integer[][] getMachines() {
+		return machines;
+	}
+
+	private Integer[][] getJobs() {
+		return jobs;
+	}
+
+	private Integer[][] getMakespanMatrix() {
+		return makespanMatrix;
+	}
+
+	private Integer getNumMachines() {
+		return numMachines;
 	}
 
 }

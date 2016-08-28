@@ -1,7 +1,14 @@
 package be.ac.intelligence.swarm;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class RandomUtils {
 
@@ -62,6 +69,30 @@ public class RandomUtils {
 			i++;
 		}
 		return null;
+	}
+
+	/**
+	 * Generates a randomized list of integers in the range specified by the
+	 * parameters start (inclusive) and end (exclusive)
+	 * 
+	 * @param start
+	 *            Start value for the range. Included in the values for the list
+	 * @param end
+	 *            Upper limit for the sequence of number. It's not included in
+	 *            the result list
+	 * @param exclude
+	 *            List of numbers to exclude from the generated list of numbers
+	 * @return
+	 */
+	public Set<Integer> getRandomRange(int start, int end, Integer... exclude) {
+		List<Integer> resultList = IntStream.range(start, end).boxed().collect(Collectors.toList());
+		List<Integer> exclusionList = Arrays.asList(exclude);
+		if (!exclusionList.isEmpty()) {
+			resultList = resultList.stream().filter(p -> !exclusionList.contains(p)).collect(Collectors.toList());
+		}
+		Collections.shuffle(resultList);
+		return new HashSet<Integer>(resultList);
+
 	}
 
 }
