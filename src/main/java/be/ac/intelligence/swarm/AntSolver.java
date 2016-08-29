@@ -42,8 +42,12 @@ public class AntSolver {
 
 	private Double q0;
 
+	private Double alpha;
+
+	private double initPheromoneValGlobal;
+
 	private AntSolver(String instance, Double rho, Double beta, Integer numAnts, Integer numIterations,
-			Double pheromoneDecayCoeficient, Double q0, Integer seed) {
+			Double pheromoneDecayCoeficient, Double q0, Integer seed, Double alpha) {
 		// Initialize random utilities with seed parameter
 		RandomUtils.getInstance(seed);
 		problem = new PermutationFlowShopProblem(instance);
@@ -52,6 +56,7 @@ public class AntSolver {
 		this.numIterations = numIterations;
 		this.rho = rho;
 		this.beta = beta;
+		this.alpha = alpha;
 		this.pheromoneDecayCoeficient = pheromoneDecayCoeficient;
 		this.q0 = q0;
 		this.ants = new ArrayList<>();
@@ -96,7 +101,8 @@ public class AntSolver {
 	private void initAnts() {
 		this.ants = new ArrayList<>();
 		for (int i = 0; i < numAnts; i++) {
-			this.ants.add(new Ant(problem, pheromone, heuristicInformation, beta, pheromoneDecayCoeficient, q0));
+			this.ants.add(new Ant(problem, pheromone, heuristicInformation, beta, pheromoneDecayCoeficient, q0, alpha,
+					initPheromoneValGlobal));
 			// this.ants.add(new Ant());
 		}
 
@@ -149,8 +155,11 @@ public class AntSolver {
 	private void initHeuristicInformation() {
 		this.heuristicInformation = new Double[problem.getNumJobs()][problem.getNumJobs()];
 		for (int i = 0; i < problem.getNumJobs(); i++) {
-			for (int j = 0; j < problem.getNumJobs(); j++) {
+			for (int j = i; j < problem.getNumJobs(); j++) {
 				this.heuristicInformation[i][j] = 1.0 / this.problem.computeMakespan(i, j);
+				if (j != i) {
+					this.heuristicInformation[j][i] = 1.0 / this.problem.computeMakespan(j, i);
+				}
 			}
 		}
 	}
@@ -165,12 +174,12 @@ public class AntSolver {
 		LOGGER.trace("Initializing pheromone");
 		LOGGER.trace(refMakespan);
 		LOGGER.trace(seq);
-		Double initVal = numAnts.doubleValue() / refMakespan;
+		initPheromoneValGlobal = 1 / (numAnts.doubleValue() * refMakespan);
 		for (int i = 0; i < problem.getNumJobs(); i++) {
 			for (int j = i; j < problem.getNumJobs(); j++) {
-				pheromone[i][j] = initVal;
+				pheromone[i][j] = initPheromoneValGlobal;
 				if (i != j) {
-					pheromone[j][i] = initVal;
+					pheromone[j][i] = initPheromoneValGlobal;
 				}
 			}
 		}
@@ -186,6 +195,7 @@ public class AntSolver {
 		private Integer numIterations;
 		private Double rho;
 		private Double beta;
+		private Double alpha;
 		private Double pheromoneDecayCoeficient;
 		private Double q0;
 		private Integer seed;
@@ -215,6 +225,11 @@ public class AntSolver {
 			return this;
 		}
 
+		public AntSolverBuilder alpha(Double val) {
+			this.alpha = val;
+			return this;
+		}
+
 		public AntSolverBuilder pheromoneDecayCoeficient(Double val) {
 			this.pheromoneDecayCoeficient = val;
 			return this;
@@ -232,7 +247,8 @@ public class AntSolver {
 
 		public AntSolver build() {
 			LOGGER.trace("Building solver with parameters: " + printableVersion());
-			return new AntSolver(instance, rho, beta, numAnts, numIterations, pheromoneDecayCoeficient, q0, seed);
+			return new AntSolver(instance, rho, beta, numAnts, numIterations, pheromoneDecayCoeficient, q0, seed,
+					alpha);
 		}
 
 		private String printableVersion() {

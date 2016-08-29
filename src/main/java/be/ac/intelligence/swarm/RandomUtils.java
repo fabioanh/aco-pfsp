@@ -91,7 +91,7 @@ public class RandomUtils {
 		if (!exclusionList.isEmpty()) {
 			resultList = resultList.stream().filter(p -> !exclusionList.contains(p)).collect(Collectors.toList());
 		}
-		Collections.shuffle(resultList);
+		Collections.shuffle(resultList, random);
 		return new HashSet<Integer>(resultList);
 
 	}
@@ -107,12 +107,12 @@ public class RandomUtils {
 	 * @param list
 	 * @return
 	 */
-	public Integer getRandomForList(List<Map.Entry<Integer, Double>> list) {
+	public Integer getRandomFromList(List<Map.Entry<Integer, Double>> list) {
 		Double prob = getRandomDouble();
 		Double sum = 0.0;
 		for (Map.Entry<Integer, Double> elem : list) {
 			sum += elem.getValue();
-			if (prob <= sum) {
+			if (prob.compareTo(sum)<= 0) {
 				return elem.getKey();
 			}
 		}

@@ -17,6 +17,7 @@ public class App {
 	private static final String INSTANCE = "instance";
 	private static final String SEED = "seed";
 	private static final String BETA = "beta";
+	private static final String ALPHA = "alpha";
 	private static final String EPSILON = "epsilon";
 	private static final String RHO = "rho";
 	private static final String NUMBER_OF_ANTS = "ants";
@@ -37,6 +38,7 @@ public class App {
 		options.addOption(INSTANCE, true, "Path for the instance file of the SCP");
 		options.addOption(SEED, true, "Seed to be used in the random numbers obtention");
 		options.addOption(BETA, true, "Beta parameter used in the probabilities of the Ant Colony Solver");
+		options.addOption(ALPHA, true, "Alpha parameter used in the probabilities of the Ant Colony Solver");
 		options.addOption(EPSILON, true, "Beta parameter used in the pheromone thresholds of the Ant Colony Solver");
 		options.addOption(RHO, true, "Rho parameter used in the probabilities of the Ant Colony Solver");
 		options.addOption(NUMBER_OF_ANTS, true, "Number of ants for the Ant Colony Solver");
@@ -60,6 +62,9 @@ public class App {
 			if (cmd.getOptionValue(BETA) != null) {
 				builder = builder.beta(Double.valueOf(cmd.getOptionValue(BETA)));
 			}
+			if (cmd.getOptionValue(ALPHA) != null) {
+				builder = builder.alpha(Double.valueOf(cmd.getOptionValue(ALPHA)));
+			}
 			if (cmd.getOptionValue(DECAY_COEFICIENT) != null) {
 				builder = builder.pheromoneDecayCoeficient(Double.valueOf(cmd.getOptionValue(DECAY_COEFICIENT)));
 			}
@@ -81,7 +86,7 @@ public class App {
 	}
 
 	private static AntSolverBuilder getDefaultParameters() {
-		return new AntSolverBuilder().numIterations(100).numAnts(20).seed(0).pheromoneDecayCoeficient(0.05).beta(2.0)
+		return new AntSolverBuilder().numIterations(100).numAnts(20).seed(0).pheromoneDecayCoeficient(0.1).beta(2.0)
 				.q0(0.9).rho(0.1);
 	}
 }

@@ -16,20 +16,24 @@ public class Ant {
 	private Double[][] heuristicInformation;
 	private Double[][] insertionProbability;
 	private Double beta;
+	private Double alpha;
 	private Double pheromoneDecayCoeficient;
 	private Double q0;
+	private Double initialPheromoneGlobal;
 
 	public Ant(final PermutationFlowShopProblem problem, final Double[][] pheromone,
 			final Double[][] heuristicInformation, final Double beta, final Double pheromoneDecayCoeficient,
-			final double q0) {
+			final double q0, final Double alpha, final Double initialPheromoneGlobal) {
 		this.problem = SerializationUtils.clone(problem);
 		// this.problem = new PermutationFlowShopProblem(problem);
 		this.pheromone = PfspUtils.deepCopy(pheromone);
 		this.initialPheromone = PfspUtils.deepCopy(pheromone);
 		this.heuristicInformation = PfspUtils.deepCopy(heuristicInformation);
 		this.beta = beta;
+		this.alpha = alpha;
 		this.pheromoneDecayCoeficient = pheromoneDecayCoeficient;
 		this.q0 = q0;
+		this.initialPheromoneGlobal = initialPheromoneGlobal;
 		insertionProbability = new Double[problem.getNumJobs()][problem.getNumJobs()];
 	}
 
@@ -46,10 +50,12 @@ public class Ant {
 		this.pheromone = PfspUtils.deepCopy(ant.getPheromone());
 		this.heuristicInformation = PfspUtils.deepCopy(ant.getHeuristicInformation());
 		this.beta = ant.getBeta();
+		this.alpha = ant.getAlpha();
 		this.pheromone = PfspUtils.deepCopy(ant.getPheromone());
 		this.initialPheromone = PfspUtils.deepCopy(ant.getPheromone());
 		this.pheromoneDecayCoeficient = ant.getPheromoneDecayCoeficient();
 		this.q0 = ant.getQ0();
+		this.initialPheromoneGlobal = ant.getInitialPheromoneGlobal();
 		this.insertionProbability = PfspUtils.deepCopy(ant.getInsertionProbability());
 	}
 
@@ -115,7 +121,8 @@ public class Ant {
 			candidateProbabilities.add(new AbstractMap.SimpleEntry<Integer, Double>(c,
 					pseudorandomProportionalProbability(lastInsertedJob, c, candidateList)));
 		}
-		return RandomUtils.getInstance(null).getRandomForList(candidateProbabilities);
+		return RandomUtils.getInstance(null).getRandomFromList(candidateProbabilities);
+//		return candidateProbabilities.get(0).getKey();
 	}
 
 	/**
@@ -190,6 +197,7 @@ public class Ant {
 	public void solveACS() {
 		while (!problem.getUnscheduledJobs().isEmpty()) {
 			addNextJob();
+			
 			updatePheromoneSingle(problem.getSolution().get(problem.getSolution().size() - 2),
 					problem.getSolution().get(problem.getSolution().size() - 1));
 		}
@@ -241,6 +249,10 @@ public class Ant {
 	public Double getBeta() {
 		return beta;
 	}
+	
+	public Double getAlpha() {
+		return alpha;
+	}
 
 	public void setBeta(Double beta) {
 		this.beta = beta;
@@ -256,6 +268,10 @@ public class Ant {
 
 	public Double getQ0() {
 		return q0;
+	}
+	
+	public Double getInitialPheromoneGlobal() {
+		return initialPheromoneGlobal;
 	}
 
 	public void setQ0(Double q0) {

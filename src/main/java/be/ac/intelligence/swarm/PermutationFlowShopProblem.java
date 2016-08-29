@@ -7,6 +7,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.OptionalDouble;
@@ -221,11 +222,11 @@ public class PermutationFlowShopProblem implements Serializable {
 	public List<Integer> getCandidateListValues() {
 		List<Integer> candidateListt = new ArrayList<>();
 
-		OptionalDouble avgTimeScheduledJobs = scheduledJobs.stream().map(i -> timeForJobs.get(i))
+		OptionalDouble avgTimeReferenceJobs = scheduledJobs.stream().map(i -> timeForJobs.get(i))
 				.mapToDouble(a -> a.doubleValue()).average();
-		if (avgTimeScheduledJobs.isPresent()) {
+		if (avgTimeReferenceJobs.isPresent()) {
 			for (Integer uj : unscheduledJobs) {
-				if (timeForJobs.get(uj) > avgTimeScheduledJobs.getAsDouble()) {
+				if (timeForJobs.get(uj) > avgTimeReferenceJobs.getAsDouble()) {
 					candidateListt.add(uj);
 				}
 			}
@@ -233,6 +234,7 @@ public class PermutationFlowShopProblem implements Serializable {
 		if (candidateListt.isEmpty()) {
 			candidateListt.addAll(unscheduledJobs);
 		}
+		Collections.sort(candidateListt);
 		return candidateListt;
 	}
 
